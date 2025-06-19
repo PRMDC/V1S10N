@@ -1,98 +1,79 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>VISION - Efeitos IA grátis</title>
+  <meta charset="UTF-8">
+  <title>VISION - OCR Imagem para Texto</title>
   <style>
     body {
       font-family: Arial, sans-serif;
-      background-color: #f4f4f4;
-      color: #333;
-      max-width: 600px;
+      max-width: 700px;
       margin: 40px auto;
       text-align: center;
-      padding: 20px;
-    }
-    h1 {
-      color: #4CAF50;
     }
     input, button {
-      margin-top: 10px;
+      margin: 8px;
+      padding: 8px;
       font-size: 1rem;
+    }
+    textarea {
+      width: 90%;
+      height: 200px;
+      margin-top: 15px;
       padding: 10px;
-      border-radius: 5px;
-      border: 1px solid #ccc;
-    }
-    button {
-      background-color: #4CAF50;
-      color: white;
-      cursor: pointer;
-    }
-    button:hover {
-      background-color: #45a049;
-    }
-    img {
-      margin-top: 20px;
-      max-width: 100%;
-      border: 1px solid #ddd;
-      padding: 5px;
-      border-radius: 8px;
+      font-size: 1rem;
     }
   </style>
 </head>
 <body>
-  <h1>VISION - Efeitos incríveis com IA grátis</h1>
-  <p>Envie uma imagem para aplicar um efeito de "quadrinhos" nela usando inteligência artificial!</p>
-  <input type="file" id="inputImage" accept="image/*" />
-  <br/>
-  <button onclick="processImage()">Aplicar efeito</button>
-  <br/>
-  <img id="outputImage" alt="Sua imagem com efeito aparecerá aqui" />
+  <h1>Conversão de Imagem para Texto (OCR)</h1>
+  <input type="file" id="fileInput" accept="image/*,application/pdf" />
+  <br>
+  <button onclick="extractText()">Extrair Texto</button>
+  <br>
+  <textarea id="outputText" placeholder="O texto extraído aparecerá aqui..."></textarea>
+  <br>
+  <button onclick="downloadText()">Baixar como TXT</button>
 
   <script>
-    async function processImage() {
-      const input = document.getElementById('inputImage');
-      if (!input.files || input.files.length === 0) {
-        alert('Envie uma imagem antes!');
+    const apiKey = 'K88660458188957';
+
+    async function extractText() {
+      const fileInput = document.getElementById('fileInput');
+      if (!fileInput.files.length) {
+        alert('Selecione uma imagem ou PDF.');
         return;
       }
-      const file = input.files[0];
 
-      const reader = new FileReader();
-      reader.onload = async () => {
-        const base64 = reader.result.split(',')[1];
+      const file = fileInput.files[0];
+      const formData = new FormData();
+      formData.append('apikey', apiKey);
+      formData.append('file', file);
+      formData.append('language', 'por');
+      formData.append('isOverlayRequired', 'false');
 
-        try {
-          const response = await fetch('https://api-inference.huggingface.co/models/hysts/Comic-Diffusion', {
-            method: 'POST',
-            headers: {
-              'Authorization': 'Bearer ' + 'COLE_SEU_TOKEN_AQUI', // <== Coloque seu token aqui
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ inputs: base64 })
-          });
+      const response = await fetch('https://api.ocr.space/parse/image', {
+        method: 'POST',
+        body: formData
+      });
 
-          if (!response.ok) {
-            alert('Erro ao processar a imagem. Tente novamente mais tarde.');
-            return;
-          }
+      const result = await response.json();
 
-          const data = await response.json();
+      if (result.IsErroredOnProcessing) {
+        alert('Erro ao processar a imagem: ' + result.ErrorMessage);
+        return;
+      }
 
-          if (data.error) {
-            alert('Erro da API: ' + data.error);
-            return;
-          }
+      const parsedText = result.ParsedResults[0].ParsedText;
+      document.getElementById('outputText').value = parsedText;
+    }
 
-          document.getElementById('outputImage').src = 'data:image/png;base64,' + data[0].generated_image_base64;
-        } catch (err) {
-          alert('Erro na comunicação com a API. Veja o console para detalhes.');
-          console.error(err);
-        }
-      };
-
-      reader.readAsDataURL(file);
+    function downloadText() {
+      const text = document.getElementById('outputText').value;
+      const blob = new Blob([text], { type: 'text/plain' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = 'texto_extraido.txt';
+      link.click();
     }
   </script>
 </body>
